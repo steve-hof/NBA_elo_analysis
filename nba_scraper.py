@@ -2,7 +2,7 @@ import pandas as pd
 import argparse as ap
 import urllib.request
 import json
-
+import os
 from urllib.error import URLError, HTTPError, ContentTooShortError
 
 
@@ -10,6 +10,7 @@ class TeamModel:
 
     def __init__(self, team, season, season_type):
         self.BASE_URL = 'http://stats.nba.com/stats/'
+        self.BASE_SAVE_PATH = './data/team_win_loss/'
         self.TEAM_LOG_URL = self.BASE_URL + 'teamgamelog?'
         self.header_data = {  # got the header from the py goldsberry library
             'Accept-Encoding': 'gzip, deflate, sdch',
@@ -104,6 +105,16 @@ class TeamModel:
                      'Spurs': '1610612759'}
         return team_dict[self.team]
 
+    def save_to_csv(self):
+        if not os.path.exists(self.BASE_SAVE_PATH):
+            # create directory
+            os.makedirs(self.BASE_SAVE_PATH)
+            print("The necessary directory does not exist. Creating directory now.")
+        # TODO: fix string so that season type isn't hard coded
+
+        full_save_path = self.BASE_SAVE_PATH + self.team + '_' + self.season + '_' + 'reg.csv'
+        self.df.to_csv(full_save_path, index=False)
+
 
 def parse_command_line():
     parser = ap.ArgumentParser()
@@ -127,7 +138,7 @@ def main():
     team, season, season_type = parse_command_line()
     knicks = TeamModel(team, season, season_type)
     knicks.fit()
-
+    knicks.save_to_csv()
     DEBUG = 1024
 
 
