@@ -39,11 +39,10 @@ class TeamModel:
         data = self.html_data
         headers = data['resultSets'][0]['headers']
         games_list = []
-        bla = data['resultSets'][0]['rowSet']
         for game in data['resultSets'][0]['rowSet']:
             games_list.append(game)
 
-        df = pd.DataFrame(games_list, columns=headers)
+        self.df = pd.DataFrame(games_list, columns=headers)
 
         DEBUG = 8
 
@@ -52,9 +51,6 @@ class TeamModel:
         request = urllib.request.Request(self.json_url)
         request.add_header('User-agent', self.user_agent)
         try:
-            # with urllib.request.urlopen(json_url) as url:
-            #     data = json.loads(url.read().decode())
-            # html = urllib.request.urlopen(request).read().decode()
             with urllib.request.urlopen(request) as url:
                 html = json.loads(url.read().decode())
         except (URLError, HTTPError, ContentTooShortError) as e:
@@ -129,10 +125,11 @@ def parse_command_line():
 
 def main():
     team, season, season_type = parse_command_line()
-    knicks_17_18 = TeamModel(team, season, season_type)
-    knicks_17_18.fit()
+    knicks = TeamModel(team, season, season_type)
+    knicks.fit()
 
     DEBUG = 1024
+
 
 if __name__ == '__main__':
     main()
