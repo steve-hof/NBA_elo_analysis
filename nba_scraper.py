@@ -3,24 +3,68 @@ import argparse as ap
 import urllib.request
 import json
 
+from urllib.error import URLError, HTTPError, ContentTooShortError
+
 
 class TeamModel:
 
     def __init__(self, team, season, season_type):
         self.BASE_URL = 'http://stats.nba.com/stats/'
         self.TEAM_LOG_URL = self.BASE_URL + 'teamgamelog?'
+        self.header_data = {  # got the header from the py goldsberry library
+            'Accept-Encoding': 'gzip, deflate, sdch',
+            'Accept-Language': 'en-US,en;q=0.8',
+            'Upgrade-Insecure-Requests': '1',
+            'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_13_4) '
+                          'AppleWebKit/537.36 (KHTML, like Gecko) Chrome/66.0.3359.139 Safari/537.36',
+            'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9' \
+                      ',image/webp,*/*;q=0.8',
+            'Cache-Control': 'max-age=0',
+            'Connection': 'keep-alive'
+        }
+        self.user_agent = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_13_4) '
+        'AppleWebKit/537.36 (KHTML, like Gecko) Chrome/66.0.3359.139 Safari/537.36'
 
         self.team = team
         self.season = season
         self.season_type = season_type
         self.json_url = self._build_url()
-        self.page_data = self._get_page_data()
+        # self.page_data = self._get_page_data()
+        self.html_data = self._download()
 
-        DEBUG = 12
+    def fit(self):
+        self._parse_data()
 
-    def _get_page_data(self):
-        with urllib.request.urlopen(self.json_url) as url:
-            return json.loads(url.read().decode())
+    def _parse_data(self):
+        data = self.html_data
+        headers = data['resultSets'][0]['headers']
+        games_list = []
+        bla = data['resultSets'][0]['rowSet']
+        for game in data['resultSets'][0]['rowSet']:
+            games_list.append(game)
+
+        df = pd.DataFrame(games_list, columns=headers)
+
+        DEBUG = 8
+
+    def _download(self, num_retries=2):
+        print('Downloading:', self.json_url)
+        request = urllib.request.Request(self.json_url)
+        request.add_header('User-agent', self.user_agent)
+        try:
+            # with urllib.request.urlopen(json_url) as url:
+            #     data = json.loads(url.read().decode())
+            # html = urllib.request.urlopen(request).read().decode()
+            with urllib.request.urlopen(request) as url:
+                html = json.loads(url.read().decode())
+        except (URLError, HTTPError, ContentTooShortError) as e:
+            print('Download error:', e.reason)
+            html = None
+            if num_retries > 0:
+                if hasattr(e, 'code') and 500 <= e.code < 600:
+                    # recursively retry 5xx HTTP errors
+                    return self._download(self.json_url, num_retries - 1)
+        return html
 
     def _build_url(self):
         parameter_list = ['TeamID=', 'Season=', 'SeasonType=']
@@ -85,9 +129,10 @@ def parse_command_line():
 
 def main():
     team, season, season_type = parse_command_line()
-    a_season = TeamModel(team, season, season_type)
+    knicks_17_18 = TeamModel(team, season, season_type)
+    knicks_17_18.fit()
 
-
+    DEBUG = 1024
 
 if __name__ == '__main__':
     main()
