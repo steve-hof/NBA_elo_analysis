@@ -127,18 +127,20 @@ def parse_command_line():
     team = args.team[0]
     season = args.season[0]
     season_type_list = args.season_type[0].split('_')
-    season_type = "" + season_type_list[0] + '%20' + season_type_list[1]
-
-    actual_game_log_string = 'http://stats.nba.com//stats/teamgamelog?TeamID=1610612752&Season=2017-18&SeasonType=Regular%20Season'
+    if len(season_type_list) > 1:
+        season_type = "" + season_type_list[0] + '%20' + season_type_list[1]
+    else:
+        season_type = season_type_list[0]
+    # actual_game_log_string = 'http://stats.nba.com//stats/teamgamelog?TeamID=1610612752&Season=2017-18&SeasonType=Regular%20Season'
 
     return team, season, season_type
 
 
 def main():
     team, season, season_type = parse_command_line()
-    knicks = TeamModel(team, season, season_type)
-    knicks.fit()
-    knicks.save_to_csv()
+    team_season = TeamModel(team, season, season_type)
+    team_season.fit()
+    # team_season.save_to_csv()
     DEBUG = 1024
 
 
